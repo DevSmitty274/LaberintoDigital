@@ -5,6 +5,8 @@ using System.Threading;
 
 public class MPU6050Receiver : MonoBehaviour
 {
+
+//140 o -140 en z o 270 en y o 100 en x
     public int port = 4210;
 
     private UdpClient udpClient;
@@ -19,6 +21,8 @@ public class MPU6050Receiver : MonoBehaviour
     public Vector3 minPosition = new Vector3(-5f, -5f, -5f);
     public Vector3 maxPosition = new Vector3(5f, 5f, 5f);
 
+    public Rigidbody rb;
+
     void Start()
     {
         udpClient = new UdpClient(port);
@@ -26,6 +30,10 @@ public class MPU6050Receiver : MonoBehaviour
         receiveThread = new Thread(ReceiveData);
         receiveThread.IsBackground = true;
         receiveThread.Start();
+
+        rb = GetComponent<Rigidbody>();
+        rb.isKinematic = true;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
     }
     void ReceiveData()
     {
@@ -61,22 +69,44 @@ public class MPU6050Receiver : MonoBehaviour
             gyro = new Vector3(gx, gy, gz);
         }
     }
-    void Update()
+    public Vector3 minRotation = new Vector3(-140f, -270f, -140f);
+    public Vector3 maxRotation = new Vector3(100f, 270f, 140f);
+
+    void FixedUpdate()
     {
         if (Mathf.Abs(gyro.x) > threshold || Mathf.Abs(gyro.y) > threshold || Mathf.Abs(gyro.z) > threshold)
         {
-            transform.Rotate(gyro * Time.deltaTime, Space.World);
+            Quaternion deltaRot = Quaternion.Euler(gyro * Time.fixedDeltaTime);
+            Quaternion newRot = rb.rotation * deltaRot;
+
+            Vector3 euler = newRot.eulerAngles;
+            euler = ClampEuler(euler, minRotation, maxRotation);
+
+            rb.MoveRotation(Quaternion.Euler(euler));
         }
 
-        Vector3 pos = transform.position;
-
+        Vector3 pos = rb.position;
         pos.x = Mathf.Clamp(pos.x, minPosition.x, maxPosition.x);
         pos.y = Mathf.Clamp(pos.y, minPosition.y, maxPosition.y);
         pos.z = Mathf.Clamp(pos.z, minPosition.z, maxPosition.z);
-
-        transform.position = pos;
+        rb.MovePosition(pos);
     }
-void OnApplicationQuit()
+
+    Vector3 ClampEuler(Vector3 euler, Vector3 min, Vector3 max)
+    {
+        euler.x = ClampAngle(euler.x, min.x, max.x);
+        euler.y = ClampAngle(euler.y, min.y, max.y);
+        euler.z = ClampAngle(euler.z, min.z, max.z);
+        return euler;
+    }
+
+    float ClampAngle(float angle, float min, float max)
+    {
+        // Convierte de rango 0-360 a -180/180 para que el clamp tenga sentido
+        if (angle > 180f) angle -= 360f;
+        return Mathf.Clamp(angle, min, max);
+    }
+    void OnApplicationQuit()
     {
         running = false;
         udpClient.Close();
