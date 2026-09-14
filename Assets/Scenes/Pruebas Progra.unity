@@ -1195,8 +1195,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Generator
   _mazeCellPrefab: {fileID: 7012657874297119097, guid: 53e0d8c6857bf0842806d50da40751e3, type: 3}
-  _mazeWidth: 20
-  _mazeDepth: 20
+  _mazeWidth: 30
+  _mazeDepth: 30
 --- !u!4 &877959953
 Transform:
   m_ObjectHideFlags: 0
