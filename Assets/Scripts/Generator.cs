@@ -14,21 +14,52 @@ public class Generator : MonoBehaviour
     [SerializeField]
     private int _mazeDepth;
 
+    [SerializeField]
+    private Transform _floor; // Suelo ya ubicado en la escena
+
+    private Transform _mazeContainer;
     private MazeCell[,] _mazeGrid;
+
+    [SerializeField]
+    private Vector3 _mazeOffset = Vector3.zero;
 
     void Start()
     {
+        // Creamos un contenedor vacío, hijo del suelo, que compensa su escala
+        GameObject containerObj = new GameObject("MazeContainer");
+        _mazeContainer = containerObj.transform;
+        _mazeContainer.SetParent(_floor, worldPositionStays: false);
+        _mazeContainer.localPosition = Vector3.zero;
+        _mazeContainer.localRotation = Quaternion.identity;
+
+        // Contrarrestamos la escala del suelo para que el laberinto no se deforme
+        Vector3 floorScale = _floor.lossyScale;
+        _mazeContainer.localScale = new Vector3(
+            1f / floorScale.x,
+            1f / floorScale.y,
+            1f / floorScale.z
+        );
+
         _mazeGrid = new MazeCell[_mazeWidth, _mazeDepth];
 
         for (int x = 0; x < _mazeWidth; x++)
         {
             for (int z = 0; z < _mazeDepth; z++)
             {
-                _mazeGrid[x, z] = Instantiate(_mazeCellPrefab, new Vector3(x, 0, z), Quaternion.identity);
+                _mazeGrid[x, z] = Instantiate(
+                    _mazeCellPrefab,
+                    Vector3.zero,
+                    Quaternion.identity,
+                    _mazeContainer
+                );
+
+                // Posición LOCAL dentro del contenedor (ya no del suelo directamente)
+                _mazeGrid[x, z].transform.localPosition = new Vector3(x, 0, z);
             }
         }
 
         GenerateMaze(null, _mazeGrid[0, 0]);
+        _mazeContainer.localPosition = _mazeOffset;
     }
 
     private void GenerateMaze(MazeCell previousCell, MazeCell currentCell)
@@ -58,8 +89,8 @@ public class Generator : MonoBehaviour
 
     private IEnumerable<MazeCell> GetUnvisitedCells(MazeCell currentCell)
     {
-        int x = (int)currentCell.transform.position.x;
-        int z = (int)currentCell.transform.position.z;
+        int x = (int)currentCell.transform.localPosition.x;
+        int z = (int)currentCell.transform.localPosition.z;
 
         if (x + 1 < _mazeWidth)
         {
@@ -109,28 +140,28 @@ public class Generator : MonoBehaviour
             return;
         }
 
-        if (previousCell.transform.position.x < currentCell.transform.position.x)
+        if (previousCell.transform.localPosition.x < currentCell.transform.localPosition.x)
         {
             previousCell.ClearRightWall();
             currentCell.ClearLeftWall();
             return;
         }
 
-        if (previousCell.transform.position.x > currentCell.transform.position.x)
+        if (previousCell.transform.localPosition.x > currentCell.transform.localPosition.x)
         {
             previousCell.ClearLeftWall();
             currentCell.ClearRightWall();
             return;
         }
 
-        if (previousCell.transform.position.z < currentCell.transform.position.z)
+        if (previousCell.transform.localPosition.z < currentCell.transform.localPosition.z)
         {
             previousCell.ClearFrontWall();
             currentCell.ClearBackWall();
             return;
         }
 
-        if (previousCell.transform.position.z > currentCell.transform.position.z)
+        if (previousCell.transform.localPosition.z > currentCell.transform.localPosition.z)
         {
             previousCell.ClearBackWall();
             currentCell.ClearFrontWall();
