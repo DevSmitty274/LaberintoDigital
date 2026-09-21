@@ -1,5 +1,5 @@
 using UnityEngine;
-
+using UnityEngine.SceneManagement; 
 public class Destroy : MonoBehaviour
 {
     public GameObject canvas;
@@ -11,5 +11,9 @@ public class Destroy : MonoBehaviour
             Destroy(other.gameObject);
             canvas.SetActive(true);
         }
+    }
+    public void ReiniciarNivel()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 }
