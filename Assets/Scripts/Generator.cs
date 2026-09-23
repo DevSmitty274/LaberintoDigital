@@ -37,6 +37,11 @@ public class Generator : MonoBehaviour
     private MazeCell[,] _mazeGrid;
     private Transform _trailObjeto;
 
+    // --- Exposición pública para scripts externos (ej. CuboSigueEsfera) ---
+    public MazeCell[,] MazeGrid => _mazeGrid;
+    public int MazeWidth => _mazeWidth;
+    public int MazeDepth => _mazeDepth;
+
     void Start()
     {
         // Creamos un contenedor vacío, hijo del suelo, que compensa su escala
@@ -91,6 +96,8 @@ public class Generator : MonoBehaviour
             );
 
             _trailObjeto = instancia.transform;
+
+            _trailObjeto.SetParent(_mazeContainer, worldPositionStays: true);
 
             StartCoroutine(SeguirCaminoHaciaCubo(path));
         }
@@ -248,7 +255,8 @@ public class Generator : MonoBehaviour
         return path;
     }
 
-    private IEnumerable<MazeCell> GetConnectedNeighbors(MazeCell cell)
+    // --- Expuesto como public para que CuboSigueEsfera.cs pueda usarlo ---
+    public IEnumerable<MazeCell> GetConnectedNeighbors(MazeCell cell)
     {
         int x = (int)cell.transform.localPosition.x;
         int z = (int)cell.transform.localPosition.z;
