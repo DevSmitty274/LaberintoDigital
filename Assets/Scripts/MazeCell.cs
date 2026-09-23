@@ -21,9 +21,8 @@ public class MazeCell : MonoBehaviour
 
     public bool IsVisited { get; private set; }
 
-    // --- Getters usados por el solver (BFS) del MazeGenerator ---
-    public bool HasLeftWall => _leftWall.activeSelf;
     public bool HasRightWall => _rightWall.activeSelf;
+    public bool HasLeftWall => _leftWall.activeSelf;
     public bool HasFrontWall => _frontWall.activeSelf;
     public bool HasBackWall => _backWall.activeSelf;
 

@@ -20,28 +20,22 @@ public class Generator : MonoBehaviour
     [SerializeField]
     private Vector3 _mazeOffset = Vector3.zero;
 
-    [Header("Estela / Solución")]
+    [Header("Estela entre esfera y cubo")]
     [SerializeField]
-    private Transform _cube; // objeto que recorre el camino (debe tener un Trail Renderer)
+    private Transform _esfera; // Punto de partida
 
     [SerializeField]
-    private Transform _sphere; // meta
+    private Transform _cubo; // Punto de destino
 
     [SerializeField]
-    private float _trailSpeed = 5f;
+    private GameObject _trailPrefab; // Objeto vacío con TrailRenderer
 
     [SerializeField]
-    private Vector3 _sphereOffset = Vector3.zero; // ajusta en el Inspector para centrar la esfera en la celda
-
-    [Header("Segundo cubo (solo trail, en loop)")]
-    [SerializeField]
-    private Transform _trailCube; // objeto duplicado, sin Mesh Renderer, con Trail Renderer
-
-    [SerializeField]
-    private float _trailCooldown = 2f; // segundos que el trail queda apagado al llegar
+    private float _velocidad = 5f;
 
     private Transform _mazeContainer;
     private MazeCell[,] _mazeGrid;
+    private Transform _trailObjeto;
 
     void Start()
     {
@@ -81,38 +75,24 @@ public class Generator : MonoBehaviour
         GenerateMaze(null, _mazeGrid[0, 0]);
         _mazeContainer.localPosition = _mazeOffset;
 
-        // --- Resolver el laberinto y animar el cubo dejando la estela ---
-        MazeCell startCell = _mazeGrid[0, 0];
-        MazeCell goalCell = _mazeGrid[_mazeWidth - 1, _mazeDepth - 1];
-
-        if (_cube != null)
+        // --- Estela desde la celda de la esfera hasta la celda del cubo ---
+        if (_esfera != null && _cubo != null && _trailPrefab != null)
         {
-            var trail = _cube.GetComponent<TrailRenderer>();
-            if (trail != null)
-            {
-                trail.Clear();
-            }
+            MazeCell startCell = GetClosestCell(_esfera.position);
+            MazeCell goalCell = GetClosestCell(_cubo.position);
 
-            if (_sphere != null)
-            {
-                _sphere.position = goalCell.transform.position + _sphereOffset;
-            }
+            List<MazeCell> path = SolveMaze(startCell, goalCell);
 
-            // El cubo nace en la celda meta (junto a la esfera) y viaja hacia la
-            // celda inicial, así la estela queda dibujada desde la esfera hacia el cubo.
-            _cube.position = goalCell.transform.position;
+            // Instancia el objeto que llevará la estela, en la posición de la esfera
+            GameObject instancia = Instantiate(
+                _trailPrefab,
+                _esfera.position,
+                Quaternion.identity
+            );
 
-            List<MazeCell> solution = SolveMaze(startCell, goalCell);
-            solution.Reverse();
-            StartCoroutine(MoveAlongPath(solution));
-        }
+            _trailObjeto = instancia.transform;
 
-        if (_trailCube != null)
-        {
-            // IMPORTANTE: SolveMaze() propio, para no compartir la misma List<MazeCell>
-            // (y por lo tanto el mismo Reverse()) con el _cube principal.
-            List<MazeCell> loopPath = SolveMaze(startCell, goalCell);
-            StartCoroutine(LoopTrailCube(loopPath));
+            StartCoroutine(SeguirCaminoHaciaCubo(path));
         }
     }
 
@@ -294,74 +274,47 @@ public class Generator : MonoBehaviour
         }
     }
 
-    // ---------- Movimiento del cubo (genera la estela vía TrailRenderer) ----------
+    // Encuentra la celda más cercana a una posición del mundo (para ubicar
+    // en qué celda del grid caen la esfera y el cubo)
+    private MazeCell GetClosestCell(Vector3 worldPosition)
+    {
+        MazeCell closest = _mazeGrid[0, 0];
+        float minDist = float.MaxValue;
 
-    private IEnumerator MoveAlongPath(List<MazeCell> path)
+        foreach (var cell in _mazeGrid)
+        {
+            float dist = Vector3.Distance(cell.transform.position, worldPosition);
+            if (dist < minDist)
+            {
+                minDist = dist;
+                closest = cell;
+            }
+        }
+
+        return closest;
+    }
+
+    // ---------- Movimiento del objeto de estela, celda por celda, respetando paredes ----------
+
+    private IEnumerator SeguirCaminoHaciaCubo(List<MazeCell> path)
     {
         foreach (var cell in path)
         {
             Vector3 target = cell.transform.position;
-            target.y = _cube.position.y; // mantiene la altura del cubo
+            target.y = _trailObjeto.position.y;
 
-            while (Vector3.Distance(_cube.position, target) > 0.01f)
+            while (Vector3.Distance(_trailObjeto.position, target) > 0.05f)
             {
-                _cube.position = Vector3.MoveTowards(_cube.position, target, _trailSpeed * Time.deltaTime);
+                _trailObjeto.position = Vector3.MoveTowards(
+                    _trailObjeto.position,
+                    target,
+                    _velocidad * Time.deltaTime
+                );
                 yield return null;
             }
         }
-    }
 
-    // ---------- Segundo cubo (solo trail): recorre el camino en bucle ----------
-    // Al llegar, apaga la emision y limpia el TrailRenderer ANTES de reposicionar,
-    // asi no queda una linea recta desde el punto final hasta el nuevo inicio.
-
-    private IEnumerator LoopTrailCube(List<MazeCell> path)
-    {
-        var trail = _trailCube.GetComponent<TrailRenderer>();
-
-        while (true)
-        {
-            // Reposiciona al inicio del camino con el trail apagado y limpio.
-            if (trail != null)
-            {
-                trail.emitting = false;
-                trail.Clear();
-            }
-
-            _trailCube.position = path[0].transform.position;
-
-            yield return null; // deja que el Clear() surta efecto antes de mover
-
-            if (trail != null)
-            {
-                trail.emitting = true;
-            }
-
-            // Recorre el camino, celda por celda.
-            foreach (var cell in path)
-            {
-                Vector3 target = cell.transform.position;
-                target.y = _trailCube.position.y;
-
-                while (Vector3.Distance(_trailCube.position, target) > 0.01f)
-                {
-                    _trailCube.position = Vector3.MoveTowards(
-                        _trailCube.position,
-                        target,
-                        _trailSpeed * Time.deltaTime
-                    );
-                    yield return null;
-                }
-            }
-
-            // Llego al final: apaga y limpia el trail, y espera antes de reiniciar.
-            if (trail != null)
-            {
-                trail.emitting = false;
-                trail.Clear();
-            }
-
-            yield return new WaitForSeconds(_trailCooldown);
-        }
+        // Al llegar al cubo, se detiene y la estela queda dibujada
+        _trailObjeto.position = _cubo.position;
     }
 }
