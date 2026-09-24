@@ -117,6 +117,7 @@ public class Generator : MonoBehaviour
 
         // --- Instanciar el cubo en la celda elegida ---
         _cubo = Instantiate(_cuboPrefab, goalCell.transform.position, Quaternion.identity);
+        _cubo.SetParent(_floor, worldPositionStays: true);
 
         // --- Estela desde la celda de la esfera hasta la celda del cubo ---
         if (_esfera != null && _cubo != null && _trailPrefab != null)
