@@ -20,12 +20,12 @@ public class Generator : MonoBehaviour
     [SerializeField]
     private Vector3 _mazeOffset = Vector3.zero;
 
-    [Header("Estela entre esfera y cubo")]
+    [Header("Pelota y Cubo (se instancian automáticamente)")]
     [SerializeField]
-    private Transform _esfera; // Punto de partida
+    private Transform _esferaPrefab; // Prefab de la pelota
 
     [SerializeField]
-    private Transform _cubo; // Punto de destino
+    private Transform _cuboPrefab; // Prefab del cubo
 
     [SerializeField]
     private GameObject _trailPrefab; // Objeto vacío con TrailRenderer
@@ -33,9 +33,18 @@ public class Generator : MonoBehaviour
     [SerializeField]
     private float _velocidad = 5f;
 
+    [Header("Dificultad del cubo (en pasos dentro del laberinto)")]
+    [SerializeField, Range(0f, 1f)]
+    private float _minDificultad = 0.35f; // % del camino más largo posible
+
+    [SerializeField, Range(0f, 1f)]
+    private float _maxDificultad = 0.6f;
+
     private Transform _mazeContainer;
     private MazeCell[,] _mazeGrid;
     private Transform _trailObjeto;
+    private Transform _esfera;
+    private Transform _cubo;
 
     // --- Exposición pública para scripts externos (ej. CuboSigueEsfera) ---
     public MazeCell[,] MazeGrid => _mazeGrid;
@@ -80,15 +89,40 @@ public class Generator : MonoBehaviour
         GenerateMaze(null, _mazeGrid[0, 0]);
         _mazeContainer.localPosition = _mazeOffset;
 
+        // --- Elegir celda central para la pelota ---
+        int centerX = _mazeWidth / 2;
+        int centerZ = _mazeDepth / 2;
+        MazeCell startCell = _mazeGrid[centerX, centerZ];
+
+        // --- BFS desde la celda central para medir distancias reales ---
+        Dictionary<MazeCell, int> distancias = CalcularDistancias(startCell);
+
+        // --- Elegir celda destino dentro de un rango de dificultad ---
+        int maxDist = distancias.Values.Max();
+        int minPasos = Mathf.RoundToInt(maxDist * _minDificultad);
+        int maxPasos = Mathf.RoundToInt(maxDist * _maxDificultad);
+
+        var candidatas = distancias
+            .Where(kv => kv.Value >= minPasos && kv.Value <= maxPasos)
+            .Select(kv => kv.Key)
+            .ToList();
+
+        // Fallback por si el rango queda vacío (laberintos muy chicos)
+        MazeCell goalCell = candidatas.Count > 0
+            ? candidatas[Random.Range(0, candidatas.Count)]
+            : distancias.OrderByDescending(kv => kv.Value).First().Key;
+
+        // --- Instanciar la pelota en el centro ---
+        _esfera = Instantiate(_esferaPrefab, startCell.transform.position, Quaternion.identity);
+
+        // --- Instanciar el cubo en la celda elegida ---
+        _cubo = Instantiate(_cuboPrefab, goalCell.transform.position, Quaternion.identity);
+
         // --- Estela desde la celda de la esfera hasta la celda del cubo ---
         if (_esfera != null && _cubo != null && _trailPrefab != null)
         {
-            MazeCell startCell = GetClosestCell(_esfera.position);
-            MazeCell goalCell = GetClosestCell(_cubo.position);
-
             List<MazeCell> path = SolveMaze(startCell, goalCell);
 
-            // Instancia el objeto que llevará la estela, en la posición de la esfera
             GameObject instancia = Instantiate(
                 _trailPrefab,
                 _esfera.position,
@@ -96,7 +130,6 @@ public class Generator : MonoBehaviour
             );
 
             _trailObjeto = instancia.transform;
-
             _trailObjeto.SetParent(_mazeContainer, worldPositionStays: true);
 
             StartCoroutine(SeguirCaminoHaciaCubo(path));
@@ -136,50 +169,31 @@ public class Generator : MonoBehaviour
         if (x + 1 < _mazeWidth)
         {
             var cellToRight = _mazeGrid[x + 1, z];
-
-            if (cellToRight.IsVisited == false)
-            {
-                yield return cellToRight;
-            }
+            if (cellToRight.IsVisited == false) yield return cellToRight;
         }
 
         if (x - 1 >= 0)
         {
             var cellToLeft = _mazeGrid[x - 1, z];
-
-            if (cellToLeft.IsVisited == false)
-            {
-                yield return cellToLeft;
-            }
+            if (cellToLeft.IsVisited == false) yield return cellToLeft;
         }
 
         if (z + 1 < _mazeDepth)
         {
             var cellToFront = _mazeGrid[x, z + 1];
-
-            if (cellToFront.IsVisited == false)
-            {
-                yield return cellToFront;
-            }
+            if (cellToFront.IsVisited == false) yield return cellToFront;
         }
 
         if (z - 1 >= 0)
         {
             var cellToBack = _mazeGrid[x, z - 1];
-
-            if (cellToBack.IsVisited == false)
-            {
-                yield return cellToBack;
-            }
+            if (cellToBack.IsVisited == false) yield return cellToBack;
         }
     }
 
     private void ClearWalls(MazeCell previousCell, MazeCell currentCell)
     {
-        if (previousCell == null)
-        {
-            return;
-        }
+        if (previousCell == null) return;
 
         if (previousCell.transform.localPosition.x < currentCell.transform.localPosition.x)
         {
@@ -210,8 +224,31 @@ public class Generator : MonoBehaviour
         }
     }
 
-    // ---------- Solver (BFS) sobre el laberinto ya generado ----------
+    // ---------- BFS: distancia (en pasos) desde una celda a todas las demás ----------
+    private Dictionary<MazeCell, int> CalcularDistancias(MazeCell start)
+    {
+        var distancias = new Dictionary<MazeCell, int> { [start] = 0 };
+        var queue = new Queue<MazeCell>();
+        queue.Enqueue(start);
 
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+
+            foreach (var neighbor in GetConnectedNeighbors(current))
+            {
+                if (!distancias.ContainsKey(neighbor))
+                {
+                    distancias[neighbor] = distancias[current] + 1;
+                    queue.Enqueue(neighbor);
+                }
+            }
+        }
+
+        return distancias;
+    }
+
+    // ---------- Solver (BFS) sobre el laberinto ya generado ----------
     private List<MazeCell> SolveMaze(MazeCell start, MazeCell goal)
     {
         var visited = new HashSet<MazeCell>();
@@ -224,17 +261,11 @@ public class Generator : MonoBehaviour
         while (queue.Count > 0)
         {
             var current = queue.Dequeue();
-            if (current == goal)
-            {
-                break;
-            }
+            if (current == goal) break;
 
             foreach (var neighbor in GetConnectedNeighbors(current))
             {
-                if (visited.Contains(neighbor))
-                {
-                    continue;
-                }
+                if (visited.Contains(neighbor)) continue;
 
                 visited.Add(neighbor);
                 cameFrom[neighbor] = current;
@@ -255,54 +286,16 @@ public class Generator : MonoBehaviour
         return path;
     }
 
-    // --- Expuesto como public para que CuboSigueEsfera.cs pueda usarlo ---
     public IEnumerable<MazeCell> GetConnectedNeighbors(MazeCell cell)
     {
         int x = (int)cell.transform.localPosition.x;
         int z = (int)cell.transform.localPosition.z;
 
-        if (x + 1 < _mazeWidth && !cell.HasRightWall)
-        {
-            yield return _mazeGrid[x + 1, z];
-        }
-
-        if (x - 1 >= 0 && !cell.HasLeftWall)
-        {
-            yield return _mazeGrid[x - 1, z];
-        }
-
-        if (z + 1 < _mazeDepth && !cell.HasFrontWall)
-        {
-            yield return _mazeGrid[x, z + 1];
-        }
-
-        if (z - 1 >= 0 && !cell.HasBackWall)
-        {
-            yield return _mazeGrid[x, z - 1];
-        }
+        if (x + 1 < _mazeWidth && !cell.HasRightWall) yield return _mazeGrid[x + 1, z];
+        if (x - 1 >= 0 && !cell.HasLeftWall) yield return _mazeGrid[x - 1, z];
+        if (z + 1 < _mazeDepth && !cell.HasFrontWall) yield return _mazeGrid[x, z + 1];
+        if (z - 1 >= 0 && !cell.HasBackWall) yield return _mazeGrid[x, z - 1];
     }
-
-    // Encuentra la celda más cercana a una posición del mundo (para ubicar
-    // en qué celda del grid caen la esfera y el cubo)
-    private MazeCell GetClosestCell(Vector3 worldPosition)
-    {
-        MazeCell closest = _mazeGrid[0, 0];
-        float minDist = float.MaxValue;
-
-        foreach (var cell in _mazeGrid)
-        {
-            float dist = Vector3.Distance(cell.transform.position, worldPosition);
-            if (dist < minDist)
-            {
-                minDist = dist;
-                closest = cell;
-            }
-        }
-
-        return closest;
-    }
-
-    // ---------- Movimiento del objeto de estela, celda por celda, respetando paredes ----------
 
     private IEnumerator SeguirCaminoHaciaCubo(List<MazeCell> path)
     {
@@ -322,7 +315,6 @@ public class Generator : MonoBehaviour
             }
         }
 
-        // Al llegar al cubo, se detiene y la estela queda dibujada
         _trailObjeto.position = _cubo.position;
     }
 }

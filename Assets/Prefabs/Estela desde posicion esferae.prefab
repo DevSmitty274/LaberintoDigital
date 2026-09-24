@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 5505740385030483269}
   - component: {fileID: 1073934881680847885}
-  - component: {fileID: 3465519426026100044}
   m_Layer: 0
   m_Name: Estela desde posicion esferae
   m_TagString: Untagged
@@ -152,19 +151,3 @@ TrailRenderer:
   m_Autodestruct: 0
   m_Emitting: 1
   m_ApplyActiveColorSpace: 1
---- !u!114 &3465519426026100044
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6421714064300866680}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e241c36010d5a624f9d583da39034599, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EstelaHaciaCubo
-  _esfera: {fileID: 0}
-  _cubo: {fileID: 0}
-  _trailPrefab: {fileID: 6421714064300866680}
-  _velocidad: 5
