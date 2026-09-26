@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,11 +28,27 @@ public class Generator : MonoBehaviour
     [SerializeField]
     private Transform _cuboPrefab; // Prefab del cubo
 
+    [Header("Tubo de la solución (se crea automáticamente)")]
     [SerializeField]
-    private GameObject _trailPrefab; // Objeto vacío con TrailRenderer
+    private bool _mostrarSolucion = true;
 
     [SerializeField]
-    private float _velocidad = 5f;
+    private Material _materialTubo;
+
+    [SerializeField]
+    private float _velocidadTubo = 5f; // celdas por segundo
+
+    [SerializeField]
+    private float _radioTubo = 0.1f;
+
+    [SerializeField]
+    private float _alturaTubo = 0f; // altura sobre el piso de la celda
+
+    [SerializeField, Min(3)]
+    private int _segmentosTubo = 8;
+
+    [SerializeField]
+    private float _distanciaMinimaAnillo = 0.1f;
 
     [Header("Dificultad del cubo (en pasos dentro del laberinto)")]
     [SerializeField, Range(0f, 1f)]
@@ -42,14 +59,23 @@ public class Generator : MonoBehaviour
 
     private Transform _mazeContainer;
     private MazeCell[,] _mazeGrid;
-    private Transform _trailObjeto;
     private Transform _esfera;
     private Transform _cubo;
 
-    // --- Exposición pública para scripts externos (ej. CuboSigueEsfera) ---
+    // Datos del tubo
+    private Mesh _meshTubo;
+    private Vector3 _direccionInicialTubo = Vector3.forward;
+    private readonly List<Vector3> _puntosTubo = new List<Vector3>();
+    private readonly List<Vector3> _verticesTubo = new List<Vector3>();
+    private readonly List<int> _triangulosTubo = new List<int>();
+
+    // --- Exposición pública para scripts externos ---
     public MazeCell[,] MazeGrid => _mazeGrid;
     public int MazeWidth => _mazeWidth;
     public int MazeDepth => _mazeDepth;
+    public Transform MazeContainer => _mazeContainer;
+    public Transform Esfera => _esfera;
+    public Transform Cubo => _cubo;
 
     void Start()
     {
@@ -119,23 +145,16 @@ public class Generator : MonoBehaviour
         _cubo = Instantiate(_cuboPrefab, goalCell.transform.position, Quaternion.identity);
         _cubo.SetParent(_floor, worldPositionStays: true);
 
-        // --- Estela desde la celda de la esfera hasta la celda del cubo ---
-        if (_esfera != null && _cubo != null && _trailPrefab != null)
+        // --- Tubo de la solución: desde la celda de la pelota hasta la del cubo ---
+        if (_mostrarSolucion)
         {
             List<MazeCell> path = SolveMaze(startCell, goalCell);
-
-            GameObject instancia = Instantiate(
-                _trailPrefab,
-                _esfera.position,
-                Quaternion.identity
-            );
-
-            _trailObjeto = instancia.transform;
-            _trailObjeto.SetParent(_mazeContainer, worldPositionStays: true);
-
-            StartCoroutine(SeguirCaminoHaciaCubo(path));
+            CrearTubo();
+            StartCoroutine(DibujarTubo(path));
         }
     }
+
+    // ================= Generación del laberinto =================
 
     private void GenerateMaze(MazeCell previousCell, MazeCell currentCell)
     {
@@ -225,7 +244,9 @@ public class Generator : MonoBehaviour
         }
     }
 
-    // ---------- BFS: distancia (en pasos) desde una celda a todas las demás ----------
+    // ================= Búsqueda de caminos (BFS) =================
+
+    // Distancia (en pasos) desde una celda a todas las demás
     private Dictionary<MazeCell, int> CalcularDistancias(MazeCell start)
     {
         var distancias = new Dictionary<MazeCell, int> { [start] = 0 };
@@ -249,7 +270,7 @@ public class Generator : MonoBehaviour
         return distancias;
     }
 
-    // ---------- Solver (BFS) sobre el laberinto ya generado ----------
+    // Camino más corto entre dos celdas
     private List<MazeCell> SolveMaze(MazeCell start, MazeCell goal)
     {
         var visited = new HashSet<MazeCell>();
@@ -298,24 +319,115 @@ public class Generator : MonoBehaviour
         if (z - 1 >= 0 && !cell.HasBackWall) yield return _mazeGrid[x, z - 1];
     }
 
-    private IEnumerator SeguirCaminoHaciaCubo(List<MazeCell> path)
-    {
-        foreach (var cell in path)
-        {
-            Vector3 target = cell.transform.position;
-            target.y = _trailObjeto.position.y;
+    // ================= Tubo de la solución =================
 
-            while (Vector3.Distance(_trailObjeto.position, target) > 0.05f)
+    // Crea UN solo objeto para el tubo, hijo del contenedor del laberinto.
+    // Así comparte el espacio local de las celdas y se inclina junto con el Suelo.
+    private void CrearTubo()
+    {
+        GameObject tubo = new GameObject("CaminoSolucion");
+        tubo.transform.SetParent(_mazeContainer, worldPositionStays: false);
+        tubo.transform.localPosition = Vector3.zero;
+        tubo.transform.localRotation = Quaternion.identity;
+        tubo.transform.localScale = Vector3.one;
+
+        _meshTubo = new Mesh();
+        _meshTubo.name = "CaminoSolucion";
+        _meshTubo.indexFormat = IndexFormat.UInt32; // por si el camino es muy largo
+
+        tubo.AddComponent<MeshFilter>().mesh = _meshTubo;
+        MeshRenderer renderer = tubo.AddComponent<MeshRenderer>();
+        renderer.sharedMaterial = _materialTubo;
+        renderer.shadowCastingMode = ShadowCastingMode.Off;
+    }
+
+    private Vector3 PuntoTubo(MazeCell celda)
+    {
+        // localPosition de la celda = (x, 0, z) dentro del contenedor
+        return celda.transform.localPosition + Vector3.up * _alturaTubo;
+    }
+
+    private IEnumerator DibujarTubo(List<MazeCell> path)
+    {
+        Vector3 punta = PuntoTubo(path[0]);
+
+        _direccionInicialTubo = path.Count > 1
+            ? (PuntoTubo(path[1]) - punta).normalized
+            : Vector3.forward;
+
+        AgregarAnillo(punta);
+
+        for (int i = 1; i < path.Count; i++)
+        {
+            Vector3 target = PuntoTubo(path[i]);
+
+            while (punta != target)
             {
-                _trailObjeto.position = Vector3.MoveTowards(
-                    _trailObjeto.position,
-                    target,
-                    _velocidad * Time.deltaTime
-                );
+                punta = Vector3.MoveTowards(punta, target, _velocidadTubo * Time.deltaTime);
+
+                Vector3 ultimo = _puntosTubo[_puntosTubo.Count - 1];
+                if (punta == target || Vector3.Distance(punta, ultimo) >= _distanciaMinimaAnillo)
+                {
+                    AgregarAnillo(punta);
+                }
+
                 yield return null;
             }
         }
+    }
 
-        _trailObjeto.position = _cubo.position;
+    private void AgregarAnillo(Vector3 centro)
+    {
+        _puntosTubo.Add(centro);
+
+        Vector3 direccion = _direccionInicialTubo;
+        if (_puntosTubo.Count > 1)
+        {
+            Vector3 d = centro - _puntosTubo[_puntosTubo.Count - 2];
+            if (d.sqrMagnitude > 0.000001f)
+            {
+                direccion = d.normalized;
+            }
+        }
+
+        Quaternion rotacionAnillo = Quaternion.LookRotation(direccion);
+        int indiceBase = _verticesTubo.Count;
+
+        for (int i = 0; i < _segmentosTubo; i++)
+        {
+            float angulo = (i / (float)_segmentosTubo) * Mathf.PI * 2f;
+            Vector3 offset = new Vector3(Mathf.Cos(angulo), Mathf.Sin(angulo), 0f) * _radioTubo;
+            _verticesTubo.Add(centro + rotacionAnillo * offset);
+        }
+
+        if (_puntosTubo.Count > 1)
+        {
+            int indiceAnterior = indiceBase - _segmentosTubo;
+
+            for (int i = 0; i < _segmentosTubo; i++)
+            {
+                int siguiente = (i + 1) % _segmentosTubo;
+
+                int a = indiceAnterior + i;
+                int b = indiceAnterior + siguiente;
+                int c = indiceBase + i;
+                int d = indiceBase + siguiente;
+
+                // Orden horario visto desde afuera -> normales hacia afuera
+                _triangulosTubo.Add(a);
+                _triangulosTubo.Add(b);
+                _triangulosTubo.Add(c);
+
+                _triangulosTubo.Add(b);
+                _triangulosTubo.Add(d);
+                _triangulosTubo.Add(c);
+            }
+        }
+
+        _meshTubo.Clear();
+        _meshTubo.SetVertices(_verticesTubo);
+        _meshTubo.SetTriangles(_triangulosTubo, 0);
+        _meshTubo.RecalculateNormals();
+        _meshTubo.RecalculateBounds();
     }
 }
