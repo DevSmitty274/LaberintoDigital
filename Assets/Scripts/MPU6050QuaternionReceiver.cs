@@ -7,28 +7,21 @@ public class MPU6050QuaternionReceiver : MonoBehaviour
 {
     [Header("Red")]
     public int port = 4210;
-
     private UdpClient udpClient;
     private Thread receiveThread;
     private volatile bool running = false;
-
     [Header("Quaternion recibido del DMP (w, x, y, z), ya con offset aplicado")]
     public Quaternion sensorRotation = Quaternion.identity;
-
     [Header("Suavizado opcional")]
     public bool smooth = true;
     public float smoothSpeed = 15f; // más alto = responde más rápido
-
     public Rigidbody rb;
-
     // Buffer para lectura thread-safe del ultimo quaternion recibido
     private float qw = 1f, qx = 0f, qy = 0f, qz = 0f;
     private readonly object lockObj = new object();
-
     // Offset de calibracion inicial (para que "donde esta el sensor al arrancar" sea 0,0,0)
     private Quaternion initialOffset = Quaternion.identity;
     private bool offsetCaptured = false;
-
     void Start()
     {
         udpClient = new UdpClient(port);
@@ -41,7 +34,6 @@ public class MPU6050QuaternionReceiver : MonoBehaviour
         rb.isKinematic = true;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
     }
-
     void ReceiveData()
     {
         IPEndPoint remoteEP = new IPEndPoint(IPAddress.Any, port);
@@ -62,7 +54,6 @@ public class MPU6050QuaternionReceiver : MonoBehaviour
             }
         }
     }
-
     void ParseData(string text)
     {
         // Formato esperado desde el ESP32: w,x,y,z
@@ -129,21 +120,6 @@ public class MPU6050QuaternionReceiver : MonoBehaviour
             rb.MoveRotation(targetRot);
         }
     }
-
-    // Llama a esto (por ejemplo desde un boton en el UI) para "recentrar" el sensor
-    // en cualquier momento, tomando la orientacion actual como el nuevo 0,0,0
-    public void Recalibrar()
-    {
-        float w, x, y, z;
-        lock (lockObj)
-        {
-            w = qw; x = qx; y = qy; z = qz;
-        }
-        Quaternion raw = new Quaternion(-x, -z, -y, w);
-        initialOffset = raw;
-        offsetCaptured = true;
-    }
-
     void OnApplicationQuit()
     {
         running = false;
@@ -155,4 +131,3 @@ public class MPU6050QuaternionReceiver : MonoBehaviour
         }
     }
 }
-
