@@ -8,42 +8,52 @@ public class CuboSigueEsfera : MonoBehaviour
     private Generator _generator; // Referencia al script que genera y expone el laberinto
 
     [SerializeField]
-    private Transform _esfera; // Punto de destino (meta)
+    private Transform _esfera; // Punto de INICIO del recorrido
 
     [SerializeField]
-    private Transform _cubo; // Objeto que se mueve (debe tener su propio Trail Renderer)
+    private Transform _trail; // Objeto que se mueve, tiene el TrailRenderer
+
+    [SerializeField]
+    private Transform _metaFija; // Posición FIJA de la meta (guardada antes de mover el trail)
 
     [SerializeField]
     private float _velocidad = 5f;
 
     void Start()
     {
+        var trailRenderer = _trail.GetComponent<TrailRenderer>();
+        if (trailRenderer != null)
+        {
+            trailRenderer.textureMode = LineTextureMode.Tile;
+        }
+
         StartCoroutine(EsperarYSeguir());
     }
 
     private IEnumerator EsperarYSeguir()
     {
-        // Espera un frame para asegurarse de que Generator ya construyó el laberinto
         yield return null;
 
-        if (_generator == null || _esfera == null || _cubo == null)
+        if (_generator == null || _esfera == null || _trail == null || _metaFija == null)
         {
             Debug.LogWarning("Faltan referencias en CuboSigueEsfera.");
             yield break;
         }
 
-        MazeCell startCell = GetClosestCell(_cubo.position);
-        MazeCell goalCell = GetClosestCell(_esfera.position);
+        _trail.position = _esfera.position;
+
+        MazeCell startCell = GetClosestCell(_esfera.position);
+        MazeCell goalCell = GetClosestCell(_metaFija.position);
 
         List<MazeCell> path = SolveMaze(startCell, goalCell);
 
-        var trail = _cubo.GetComponent<TrailRenderer>();
-        if (trail != null)
+        var trailRenderer = _trail.GetComponent<TrailRenderer>();
+        if (trailRenderer != null)
         {
-            trail.Clear();
+            trailRenderer.Clear();
         }
 
-        yield return StartCoroutine(SeguirCaminoHaciaEsfera(path));
+        yield return StartCoroutine(SeguirCaminoHaciaMeta(path));
     }
 
     // ---------- Solver (BFS) usando el laberinto expuesto por Generator ----------
@@ -91,7 +101,6 @@ public class CuboSigueEsfera : MonoBehaviour
         return path;
     }
 
-    // Encuentra la celda más cercana a una posición del mundo
     private MazeCell GetClosestCell(Vector3 worldPosition)
     {
         MazeCell[,] grid = _generator.MazeGrid;
@@ -111,27 +120,59 @@ public class CuboSigueEsfera : MonoBehaviour
         return closest;
     }
 
-    // ---------- Movimiento del cubo, celda por celda, respetando paredes ----------
+    // ---------- Movimiento del trail, reiniciando pero conservando el largo previo ----------
 
-    private IEnumerator SeguirCaminoHaciaEsfera(List<MazeCell> path)
+    private IEnumerator SeguirCaminoHaciaMeta(List<MazeCell> path)
     {
+        var trailRenderer = _trail.GetComponent<TrailRenderer>();
+
         foreach (var cell in path)
         {
-            Vector3 target = cell.transform.position;
-            target.y = _cubo.position.y; // mantiene la altura del cubo
+            Vector3 target = cell.transform.position; // usa el Y real de la celda
 
-            while (Vector3.Distance(_cubo.position, target) > 0.05f)
+            while (Vector3.Distance(_trail.position, target) > 0.05f)
             {
-                _cubo.position = Vector3.MoveTowards(
-                    _cubo.position,
+                _trail.position = Vector3.MoveTowards(
+                    _trail.position,
                     target,
                     _velocidad * Time.deltaTime
                 );
+
                 yield return null;
+            }
+
+            // Al llegar a esta celda, se reinicia el trazo pero conservando el largo (cantidad de puntos)
+            if (trailRenderer != null)
+            {
+                ReiniciarTrailConservandoLargo(trailRenderer);
             }
         }
 
-        // Al llegar, se ajusta exactamente a la posición de la esfera
-        _cubo.position = _esfera.position;
+        _trail.position = _metaFija.position;
+    }
+
+    // ---------- Borra el trazo pero lo re-llena con el mismo largo, en la posicion actual del cubo ----------
+
+    private void ReiniciarTrailConservandoLargo(TrailRenderer trailRenderer)
+    {
+        int puntosPrevios = trailRenderer.positionCount;
+
+        trailRenderer.Clear();
+
+        if (puntosPrevios <= 0)
+        {
+            return; // no habia trazo previo, no hay nada que conservar
+        }
+
+        // Se crea un array con la misma cantidad de puntos que tenia antes,
+        // todos ubicados en la posicion actual del cubo/trail
+        Vector3[] nuevosPuntos = new Vector3[puntosPrevios];
+        for (int i = 0; i < puntosPrevios; i++)
+        {
+            nuevosPuntos[i] = _trail.position;
+        }
+
+        // SetPositions ajusta positionCount automaticamente segun el largo del array
+        trailRenderer.SetPositions(nuevosPuntos);
     }
 }
