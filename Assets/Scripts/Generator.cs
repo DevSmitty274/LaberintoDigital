@@ -50,6 +50,9 @@ public class Generator : MonoBehaviour
     [SerializeField]
     private float _distanciaMinimaAnillo = 0.1f;
 
+    [SerializeField, Min(0f)]
+    private float _segundosAntesDeDesaparecer = 3f; // tiempo visible tras terminar de dibujarse
+
     [Header("Dificultad del cubo (en pasos dentro del laberinto)")]
     [SerializeField, Range(0f, 1f)]
     private float _minDificultad = 0.35f; // % del camino más largo posible
@@ -63,6 +66,7 @@ public class Generator : MonoBehaviour
     private Transform _cubo;
 
     // Datos del tubo
+    private GameObject _tuboObjeto;
     private Mesh _meshTubo;
     private Vector3 _direccionInicialTubo = Vector3.forward;
     private readonly List<Vector3> _puntosTubo = new List<Vector3>();
@@ -326,6 +330,7 @@ public class Generator : MonoBehaviour
     private void CrearTubo()
     {
         GameObject tubo = new GameObject("CaminoSolucion");
+        _tuboObjeto = tubo;
         tubo.transform.SetParent(_mazeContainer, worldPositionStays: false);
         tubo.transform.localPosition = Vector3.zero;
         tubo.transform.localRotation = Quaternion.identity;
@@ -374,6 +379,29 @@ public class Generator : MonoBehaviour
                 yield return null;
             }
         }
+
+        // --- Espera y desaparece ---
+        yield return new WaitForSeconds(_segundosAntesDeDesaparecer);
+        BorrarTubo();
+    }
+
+    private void BorrarTubo()
+    {
+        if (_tuboObjeto != null)
+        {
+            Destroy(_tuboObjeto);
+            _tuboObjeto = null;
+        }
+
+        if (_meshTubo != null)
+        {
+            Destroy(_meshTubo); // el mesh creado por código no se libera solo
+            _meshTubo = null;
+        }
+
+        _puntosTubo.Clear();
+        _verticesTubo.Clear();
+        _triangulosTubo.Clear();
     }
 
     private void AgregarAnillo(Vector3 centro)
