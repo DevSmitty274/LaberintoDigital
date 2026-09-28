@@ -7,9 +7,9 @@ public class MPU6050QuaternionReceiver : MonoBehaviour
 {
     [Header("Red")]
     public int port = 4210;
-    private UdpClient udpClient;
-    private Thread receiveThread;
-    private volatile bool running = false;
+    public UdpClient udpClient;
+    public Thread receiveThread;
+    public volatile bool running = false;
     [Header("Quaternion recibido del DMP (w, x, y, z), ya con offset aplicado")]
     public Quaternion sensorRotation = Quaternion.identity;
     [Header("Suavizado opcional")]
