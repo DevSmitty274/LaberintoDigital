@@ -81,9 +81,41 @@ public class Generator : MonoBehaviour
     public Transform Esfera => _esfera;
     public Transform Cubo => _cubo;
 
+    // Se dispara cada vez que el laberinto se (re)genera.
+    // Útil si otros scripts guardan referencias (MazeGrid, Esfera, Cubo) y necesitan refrescarlas.
+    public event System.Action OnMazeGenerated;
+
+    private MazeData _datosActuales;
+    private Coroutine _corrutinaTubo;
+
     void Start()
     {
-        // Creamos un contenedor vacío, hijo del suelo, que compensa su escala
+        CrearContenedor();
+
+        // Compatibilidad: si la escena se recargó con MarcarReinicio(), se reutiliza el laberinto guardado
+        bool hayDatos = MazeSaveSystem.TryLoadParaReinicio(out MazeData data);
+        Construir(hayDatos ? data : null);
+    }
+
+    // ================= API pública (para los botones) =================
+
+    // Genera un laberinto nuevo SIN recargar la escena
+    public void GenerarNuevo()
+    {
+        Construir(null);
+    }
+
+    // Reconstruye el MISMO laberinto SIN recargar la escena
+    public void ReiniciarMismoLaberinto()
+    {
+        Construir(_datosActuales);
+    }
+
+    // ================= Construcción =================
+
+    // El contenedor se crea una sola vez y se reutiliza siempre
+    private void CrearContenedor()
+    {
         GameObject containerObj = new GameObject("MazeContainer");
         _mazeContainer = containerObj.transform;
         _mazeContainer.SetParent(_floor, worldPositionStays: false);
@@ -97,7 +129,41 @@ public class Generator : MonoBehaviour
             1f / floorScale.y,
             1f / floorScale.z
         );
+    }
 
+    // Elimina las celdas y el tubo anteriores. Contenedor, esfera y cubo se conservan.
+    private void LimpiarLaberinto()
+    {
+        if (_corrutinaTubo != null)
+        {
+            StopCoroutine(_corrutinaTubo);
+            _corrutinaTubo = null;
+        }
+        BorrarTubo();
+
+        if (_mazeGrid != null)
+        {
+            foreach (MazeCell celda in _mazeGrid)
+            {
+                if (celda == null) continue;
+                celda.gameObject.SetActive(false); // desaparece ya (también de la física)
+                Destroy(celda.gameObject);
+            }
+        }
+    }
+
+    private void Construir(MazeData data)
+    {
+        LimpiarLaberinto();
+
+        // ¿Usamos datos guardados? (solo si el tamaño sigue siendo el mismo)
+        bool hayDatos = data != null && data.width == _mazeWidth && data.depth == _mazeDepth;
+
+        // Misma semilla = mismas "tiradas" de Random = mismo laberinto
+        int seed = hayDatos ? data.seed : Random.Range(int.MinValue, int.MaxValue);
+        Random.InitState(seed);
+
+        _mazeContainer.localPosition = Vector3.zero;
         _mazeGrid = new MazeCell[_mazeWidth, _mazeDepth];
 
         for (int x = 0; x < _mazeWidth; x++)
@@ -111,7 +177,7 @@ public class Generator : MonoBehaviour
                     _mazeContainer
                 );
 
-                // Posición LOCAL dentro del contenedor (ya no del suelo directamente)
+                // Posición LOCAL dentro del contenedor
                 _mazeGrid[x, z].transform.localPosition = new Vector3(x, 0, z);
             }
         }
@@ -124,38 +190,82 @@ public class Generator : MonoBehaviour
         int centerZ = _mazeDepth / 2;
         MazeCell startCell = _mazeGrid[centerX, centerZ];
 
-        // --- BFS desde la celda central para medir distancias reales ---
-        Dictionary<MazeCell, int> distancias = CalcularDistancias(startCell);
+        MazeCell goalCell;
 
-        // --- Elegir celda destino dentro de un rango de dificultad ---
-        int maxDist = distancias.Values.Max();
-        int minPasos = Mathf.RoundToInt(maxDist * _minDificultad);
-        int maxPasos = Mathf.RoundToInt(maxDist * _maxDificultad);
+        if (hayDatos)
+        {
+            goalCell = _mazeGrid[data.goalX, data.goalZ];
+            _datosActuales = data;
+        }
+        else
+        {
+            // --- BFS desde la celda central para medir distancias reales ---
+            Dictionary<MazeCell, int> distancias = CalcularDistancias(startCell);
 
-        var candidatas = distancias
-            .Where(kv => kv.Value >= minPasos && kv.Value <= maxPasos)
-            .Select(kv => kv.Key)
-            .ToList();
+            // --- Elegir celda destino dentro de un rango de dificultad ---
+            int maxDist = distancias.Values.Max();
+            int minPasos = Mathf.RoundToInt(maxDist * _minDificultad);
+            int maxPasos = Mathf.RoundToInt(maxDist * _maxDificultad);
 
-        // Fallback por si el rango queda vacío (laberintos muy chicos)
-        MazeCell goalCell = candidatas.Count > 0
-            ? candidatas[Random.Range(0, candidatas.Count)]
-            : distancias.OrderByDescending(kv => kv.Value).First().Key;
+            var candidatas = distancias
+                .Where(kv => kv.Value >= minPasos && kv.Value <= maxPasos)
+                .Select(kv => kv.Key)
+                .ToList();
 
-        // --- Instanciar la pelota en el centro ---
-        _esfera = Instantiate(_esferaPrefab, startCell.transform.position, Quaternion.identity);
+            // Fallback por si el rango queda vacío (laberintos muy chicos)
+            goalCell = candidatas.Count > 0
+                ? candidatas[Random.Range(0, candidatas.Count)]
+                : distancias.OrderByDescending(kv => kv.Value).First().Key;
 
-        // --- Instanciar el cubo en la celda elegida ---
-        _cubo = Instantiate(_cuboPrefab, goalCell.transform.position, Quaternion.identity);
-        _cubo.SetParent(_floor, worldPositionStays: true);
+            // --- Guardamos el laberinto (reemplaza al anterior) ---
+            _datosActuales = new MazeData
+            {
+                seed = seed,
+                width = _mazeWidth,
+                depth = _mazeDepth,
+                goalX = (int)goalCell.transform.localPosition.x,
+                goalZ = (int)goalCell.transform.localPosition.z
+            };
+            MazeSaveSystem.Save(_datosActuales);
+        }
+
+        // --- Pelota: se crea la primera vez y después solo se mueve ---
+        if (_esfera == null)
+        {
+            _esfera = Instantiate(_esferaPrefab, startCell.transform.position, Quaternion.identity);
+        }
+        else
+        {
+            _esfera.position = startCell.transform.position;
+
+            Rigidbody rb = _esfera.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+        }
+
+        // --- Cubo: se crea la primera vez y después solo se mueve ---
+        if (_cubo == null)
+        {
+            _cubo = Instantiate(_cuboPrefab, goalCell.transform.position, Quaternion.identity);
+            _cubo.SetParent(_floor, worldPositionStays: true);
+        }
+        else
+        {
+            _cubo.position = goalCell.transform.position;
+        }
 
         // --- Tubo de la solución: desde la celda de la pelota hasta la del cubo ---
         if (_mostrarSolucion)
         {
             List<MazeCell> path = SolveMaze(startCell, goalCell);
             CrearTubo();
-            StartCoroutine(DibujarTubo(path));
+            _corrutinaTubo = StartCoroutine(DibujarTubo(path));
         }
+
+        OnMazeGenerated?.Invoke();
     }
 
     // ================= Generación del laberinto =================
