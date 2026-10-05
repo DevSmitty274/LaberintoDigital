@@ -3,6 +3,8 @@ using UnityEngine.SceneManagement;
 public class Destroy : MonoBehaviour
 {
     public GameObject canvasWin;
+    [SerializeField]
+    private Generator _generator;
     void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Pelota"))
@@ -11,8 +13,8 @@ public class Destroy : MonoBehaviour
             canvasWin.SetActive(true);
         }
     }
-    public void ReiniciarNivel()
+    public void SiguienteNivel()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        _generator.GenerarNuevo();
     }
 }
