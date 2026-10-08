@@ -60,6 +60,16 @@ public class Generator : MonoBehaviour
     [SerializeField, Range(0f, 1f)]
     private float _maxDificultad = 0.6f;
 
+    [Header("Objetos coleccionables (puntaje)")]
+    [SerializeField]
+    private Coleccionable _coleccionablePrefab;
+
+    [SerializeField, Min(0)]
+    private int _cantidadColeccionables = 5;
+
+    [SerializeField]
+    private float _alturaColeccionable = 0.3f; // altura sobre el piso de la celda
+
     private Transform _mazeContainer;
     private MazeCell[,] _mazeGrid;
     private Transform _esfera;
@@ -87,6 +97,10 @@ public class Generator : MonoBehaviour
 
     private MazeData _datosActuales;
     private Coroutine _corrutinaTubo;
+    private readonly List<Coleccionable> _coleccionables = new List<Coleccionable>();
+
+    // true si la última generación fue un reinicio del mismo laberinto (botón Reiniciar)
+    public bool EsReinicio { get; private set; }
 
     void Start()
     {
@@ -102,12 +116,14 @@ public class Generator : MonoBehaviour
     // Genera un laberinto nuevo SIN recargar la escena
     public void GenerarNuevo()
     {
+        EsReinicio = false;
         Construir(null);
     }
 
     // Reconstruye el MISMO laberinto SIN recargar la escena
     public void ReiniciarMismoLaberinto()
     {
+        EsReinicio = true;
         Construir(_datosActuales);
     }
 
@@ -140,6 +156,7 @@ public class Generator : MonoBehaviour
             _corrutinaTubo = null;
         }
         BorrarTubo();
+        LimpiarColeccionables();
 
         if (_mazeGrid != null)
         {
@@ -265,7 +282,54 @@ public class Generator : MonoBehaviour
             _corrutinaTubo = StartCoroutine(DibujarTubo(path));
         }
 
+        GenerarColeccionables(seed, startCell, goalCell);
+
         OnMazeGenerated?.Invoke();
+    }
+
+    // ================= Coleccionables =================
+
+    // Las celdas se eligen con un generador propio basado en la semilla,
+    // así al reiniciar los objetos reaparecen exactamente en los mismos lugares.
+    private void GenerarColeccionables(int seed, MazeCell startCell, MazeCell goalCell)
+    {
+        if (_coleccionablePrefab == null || _cantidadColeccionables <= 0) return;
+
+        var libres = new List<MazeCell>();
+        foreach (MazeCell celda in _mazeGrid)
+        {
+            if (celda != startCell && celda != goalCell) libres.Add(celda);
+        }
+
+        // Mezcla determinista (Fisher-Yates)
+        var rng = new System.Random(seed + 7919);
+        for (int i = libres.Count - 1; i > 0; i--)
+        {
+            int j = rng.Next(i + 1);
+            (libres[i], libres[j]) = (libres[j], libres[i]);
+        }
+
+        int cantidad = Mathf.Min(_cantidadColeccionables, libres.Count);
+
+        for (int i = 0; i < cantidad; i++)
+        {
+            Coleccionable item = Instantiate(_coleccionablePrefab, _mazeContainer);
+            item.transform.localPosition = libres[i].transform.localPosition + Vector3.up * _alturaColeccionable;
+            item.transform.localRotation = Quaternion.identity;
+            item.Configurar(_esfera);
+            _coleccionables.Add(item);
+        }
+    }
+
+    private void LimpiarColeccionables()
+    {
+        foreach (Coleccionable item in _coleccionables)
+        {
+            if (item == null) continue; // ya fue recogido
+            item.gameObject.SetActive(false);
+            Destroy(item.gameObject);
+        }
+        _coleccionables.Clear();
     }
 
     // ================= Generación del laberinto =================
