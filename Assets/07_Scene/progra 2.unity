@@ -5510,10 +5510,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1936469659}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 100, y: -50}
+  m_SizeDelta: {x: 0, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &300932216
 MonoBehaviour:
@@ -6053,10 +6053,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1936469659}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 200, y: -50}
+  m_SizeDelta: {x: 0, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &404036779
 MonoBehaviour:
@@ -6220,7 +6220,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19087f7864205214d8417950911e1a57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Temporizador
-  mpuRecibidor: {fileID: 0}
+  mpuRecibidor: {fileID: 1459020318}
   generator: {fileID: 877959952}
   tiempoInicial: 5
   endZone: {fileID: 444209214}
@@ -6263,6 +6263,8 @@ MonoBehaviour:
   botonReiniciar: {fileID: 1485569599}
   _generator: {fileID: 877959952}
   _fader: {fileID: 1657242420}
+  _score: {fileID: 1511822691}
+  _resultado: {fileID: 1511822693}
   mpu: {fileID: 1459020318}
 --- !u!114 &444209215
 MonoBehaviour:
@@ -6328,7 +6330,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &552556362
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7753,7 +7755,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1027087975
 RectTransform:
   m_ObjectHideFlags: 0
@@ -9559,6 +9561,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c65924493599df6469b7b165f5615df7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ResultadoFinal
+  score: {fileID: 1511822691}
   textoPuntajeFinal: {fileID: 143734510}
   prefijo: 'PUNTAJE FINAL
 
@@ -9571,7 +9574,7 @@ MonoBehaviour:
   - {fileID: 300932216}
   - {fileID: 404036779}
   escalaSeleccion: 1.4
-  textoRanking: {fileID: 0}
+  textoRanking: {fileID: 572936706}
   maxRanking: 10
 --- !u!1 &1542633309
 GameObject:
@@ -9880,7 +9883,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SceneFader
   FadeDuration: 1
-  CubreEnUno: 1
+  CubreEnUno: 0
 --- !u!1 &1712280647
 GameObject:
   m_ObjectHideFlags: 0
@@ -15270,10 +15273,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1936469659}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: -50}
+  m_SizeDelta: {x: 0, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2058649849
 MonoBehaviour:
