@@ -46,7 +46,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _ColorMask: 15
-    - _FadeAmount: 0.5
+    - _FadeAmount: 1
     - _NumOfShutters: 20
     - _Stencil: 0
     - _StencilComp: 8
