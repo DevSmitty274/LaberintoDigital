@@ -39,7 +39,7 @@ public class EndTextAnimator : MonoBehaviour
                                   .SetDelay(letterDuration * 0.6f)
                                   .SetUpdate(true)
                                   .SetTarget(this);
-        }
+        } 
 
         playing = true;
     }
