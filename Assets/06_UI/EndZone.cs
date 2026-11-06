@@ -39,7 +39,7 @@ public class EndZone : MonoBehaviour
     }
 
     public void MostrarFinal(bool gano)
-    {
+    { 
         if (_finalMostrado) return;
         _finalMostrado = true;
 
@@ -84,8 +84,10 @@ public class EndZone : MonoBehaviour
 
     void MostrarBotones(bool gano)
     {
+        ActivarConPadres(botonReiniciar);
         botonSiguiente.SetActive(gano);
         botonReiniciar.SetActive(true);
+        Debug.Log($"EndZone: botones visibles -> reiniciar:{botonReiniciar.activeInHierarchy} siguiente:{botonSiguiente.activeInHierarchy}");
     }
 
     void ActivarConPadres(GameObject go)
@@ -130,6 +132,7 @@ public class EndZone : MonoBehaviour
 
     public void ReiniciarNivel()
     {
+        Debug.Log("EndZone: CLICK en Reiniciar -> recargando escena " + SceneManager.GetActiveScene().name);
         Time.timeScale = 1f;
         MazeSaveSystem.MarcarReinicio();
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
