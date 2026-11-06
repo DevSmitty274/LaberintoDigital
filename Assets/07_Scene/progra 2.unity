@@ -6313,7 +6313,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Temporizador
   mpuRecibidor: {fileID: 1459020318}
   generator: {fileID: 877959952}
-  tiempoInicial: 5
+  tiempoInicial: 300
   endZone: {fileID: 444209214}
   textoTiempo: {fileID: 1712280648}
 --- !u!224 &444209213
@@ -6433,7 +6433,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &552556362
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9680,8 +9680,6 @@ MonoBehaviour:
   escalaSeleccion: 1.4
   textoRanking: {fileID: 572936706}
   maxRanking: 10
-  tamanoRanking: 28
-  desplazamientoRanking: {x: -80, y: 0}
 --- !u!1 &1542633309
 GameObject:
   m_ObjectHideFlags: 0
