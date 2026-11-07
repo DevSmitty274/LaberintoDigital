@@ -151,10 +151,10 @@ Material:
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _ColorA: {r: 0.05724919, g: 0, b: 1, a: 1}
-    - _ColorB: {r: 0.23283195, g: 0, b: 1, a: 1}
+    - _ColorA: {r: 0, g: 1, b: 0.06871343, a: 1}
+    - _ColorB: {r: 0, g: 0.540131, b: 1, a: 1}
     - _ColorC: {r: 0.24528301, g: 0.14453371, b: 0.070576705, a: 1}
-    - _EmissionColor: {r: 191.74902, g: 125.28567, b: 113.44313, a: 1}
+    - _EmissionColor: {r: 1.4980392, g: 0.9787943, b: 0.88627446, a: 1}
     - _MaskScrollSpeed: {r: 1, g: 1, b: 0, a: 0}
     - _OverlayScrollSpeed: {r: 0.02, g: 0.01, b: 0, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
