@@ -26,20 +26,21 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _ALPHAPREMULTIPLY_ON
+  - _EMISSION
   - _ENVIRONMENTREFLECTIONS_OFF
   - _SPECULAR_SETUP
   - _SURFACE_TYPE_TRANSPARENT
   m_InvalidKeywords: []
-  m_LightmapFlags: 4
+  m_LightmapFlags: 2
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 1
   m_CustomRenderQueue: 3000
   stringTagMap:
     RenderType: Transparent
   disabledShaderPasses:
-  - SHADOWCASTER
-  - DepthOnly
   - MOTIONVECTORS
+  - DepthOnly
+  - SHADOWCASTER
   m_LockedProperties: _SpecColor _SpecGlossMap
   m_SavedProperties:
     serializedVersion: 3
@@ -125,7 +126,7 @@ Material:
     - _Parallax: 0.005
     - _QueueOffset: 0
     - _ReceiveShadows: 1
-    - _Smoothness: 0
+    - _Smoothness: 1
     - _SmoothnessTextureChannel: 1
     - _SpecularHighlights: 1
     - _SrcBlend: 1
@@ -137,7 +138,7 @@ Material:
     m_Colors:
     - _BaseColor: {r: 0, g: 1, b: 0.10955053, a: 0.36078432}
     - _Color: {r: 0, g: 1, b: 0.1095505, a: 0.36078432}
-    - _EmissionColor: {r: 3.3855536, g: 0, b: 0.07256619, a: 1}
+    - _EmissionColor: {r: 5.429269, g: 40.918243, b: 64.811905, a: 1}
     - _SpecColor: {r: 0.2679245, g: 0.2679245, b: 0.2679245, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

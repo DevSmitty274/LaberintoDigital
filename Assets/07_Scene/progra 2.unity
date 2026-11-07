@@ -171,8 +171,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TextGradientScroll
   gradient:
     serializedVersion: 2
-    key0: {r: 1, g: 0.8862745, b: 0.003921569, a: 1}
-    key1: {r: 0, g: 0.10980392, b: 0.78431374, a: 1}
+    key0: {r: 0.101960786, g: 0.12941177, b: 0.5764706, a: 1}
+    key1: {r: 0, g: 1, b: 0.9019608, a: 1}
     key2: {r: 1, g: 0.53333336, b: 0.53333336, a: 0}
     key3: {r: 1, g: 1, b: 1, a: 0}
     key4: {r: 0, g: 0, b: 0, a: 0}
@@ -5787,7 +5787,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!135 &316436727
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -6313,7 +6313,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Temporizador
   mpuRecibidor: {fileID: 1459020318}
   generator: {fileID: 877959952}
-  tiempoInicial: 300
+  tiempoInicial: 10
   endZone: {fileID: 444209214}
   textoTiempo: {fileID: 1712280648}
 --- !u!224 &444209213
@@ -6356,6 +6356,7 @@ MonoBehaviour:
   _fader: {fileID: 1657242420}
   _score: {fileID: 1511822691}
   _resultado: {fileID: 1511822693}
+  _camaraFOV: {fileID: 0}
   mpu: {fileID: 1459020318}
 --- !u!114 &444209215
 MonoBehaviour:
@@ -6374,6 +6375,7 @@ MonoBehaviour:
   endFOV: 35
   startDelay: 0
   duration: 3
+  returnDuration: 1
   easing:
     serializedVersion: 2
     m_Curve:
@@ -6613,8 +6615,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TextGradientScroll
   gradient:
     serializedVersion: 2
-    key0: {r: 1, g: 0.8862745, b: 0.003921569, a: 1}
-    key1: {r: 0, g: 0.10980392, b: 0.78431374, a: 1}
+    key0: {r: 0.101960786, g: 0.12941177, b: 0.5764706, a: 1}
+    key1: {r: 0, g: 1, b: 0.9019608, a: 1}
     key2: {r: 1, g: 0.53333336, b: 0.53333336, a: 0}
     key3: {r: 1, g: 1, b: 1, a: 0}
     key4: {r: 0, g: 0, b: 0, a: 0}
@@ -7713,7 +7715,7 @@ Camera:
   m_projectionMatrixMode: 2
   m_GateFitMode: 2
   m_FOVAxisMode: 0
-  m_Iso: 200
+  m_Iso: 300
   m_ShutterSpeed: 0.005
   m_Aperture: 16
   m_FocusDistance: 10
@@ -8098,17 +8100,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TextGradientScroll
   gradient:
     serializedVersion: 2
-    key0: {r: 0.9433962, g: 0.924185, b: 0.21804914, a: 1}
-    key1: {r: 0.9529412, g: 0.5294559, b: 0.32941175, a: 1}
-    key2: {r: 0.6557343, g: 0.3411765, b: 0.9529412, a: 0}
+    key0: {r: 0.101960786, g: 0.12941177, b: 0.5764706, a: 1}
+    key1: {r: 0, g: 1, b: 0.9019608, a: 1}
+    key2: {r: 1, g: 0.53333336, b: 0.53333336, a: 0}
     key3: {r: 1, g: 1, b: 1, a: 0}
     key4: {r: 0, g: 0, b: 0, a: 0}
     key5: {r: 0, g: 0, b: 0, a: 0}
     key6: {r: 0, g: 0, b: 0, a: 0}
     key7: {r: 0, g: 0, b: 0, a: 0}
-    ctime0: 0
-    ctime1: 16577
-    ctime2: 45682
+    ctime0: 193
+    ctime1: 19853
+    ctime2: 45875
     ctime3: 65535
     ctime4: 0
     ctime5: 0
@@ -8915,7 +8917,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!65 &1436530430
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -8962,7 +8964,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 32eb98ce75509f947a1e920cc2fe5e40, type: 2}
+  - {fileID: 2100000, guid: c2c92877d7123f84eb71d4ca525ba168, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -9002,13 +9004,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1436530429}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 17, y: -649, z: -413}
-  m_LocalScale: {x: 338.54214, y: 72.32, z: 302.0655}
-  m_ConstrainProportionsScale: 0
+  m_LocalRotation: {x: -0, y: -0.7069995, z: -0, w: 0.7072142}
+  m_LocalPosition: {x: 14.33, y: -16.5, z: 13.8}
+  m_LocalScale: {x: 90, y: 7.796207, z: 109.05894}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: -89.983, z: 0}
 --- !u!1 &1459020313
 GameObject:
   m_ObjectHideFlags: 0
@@ -9094,7 +9096,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 71d6d7d3f5516164ba88a50348290b22, type: 2}
+  - {fileID: 2100000, guid: c2c92877d7123f84eb71d4ca525ba168, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -9356,17 +9358,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TextGradientScroll
   gradient:
     serializedVersion: 2
-    key0: {r: 0.9433962, g: 0.924185, b: 0.21804914, a: 1}
-    key1: {r: 0.9529412, g: 0.5294559, b: 0.32941175, a: 1}
-    key2: {r: 0.6557343, g: 0.3411765, b: 0.9529412, a: 0}
+    key0: {r: 0.101960786, g: 0.12941177, b: 0.5764706, a: 1}
+    key1: {r: 0, g: 1, b: 0.9019608, a: 1}
+    key2: {r: 1, g: 0.53333336, b: 0.53333336, a: 0}
     key3: {r: 1, g: 1, b: 1, a: 0}
     key4: {r: 0, g: 0, b: 0, a: 0}
     key5: {r: 0, g: 0, b: 0, a: 0}
     key6: {r: 0, g: 0, b: 0, a: 0}
     key7: {r: 0, g: 0, b: 0, a: 0}
-    ctime0: 0
-    ctime1: 16577
-    ctime2: 45682
+    ctime0: 193
+    ctime1: 19853
+    ctime2: 45875
     ctime3: 65535
     ctime4: 0
     ctime5: 0
@@ -9504,7 +9506,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!65 &1504417524
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -15241,7 +15243,7 @@ Light:
   m_Enabled: 1
   serializedVersion: 13
   m_Type: 0
-  m_Color: {r: 0.16487183, g: 0.3679245, b: 0.3601148, a: 1}
+  m_Color: {r: 0.24992086, g: 0.16470589, b: 0.36862746, a: 1}
   m_Intensity: 100000
   m_Range: 79.5
   m_SpotAngle: 95.18689

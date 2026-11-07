@@ -15,6 +15,7 @@ public class EndZone : MonoBehaviour
     [SerializeField] private SceneFader _fader;
     [SerializeField] private Score _score;
     [SerializeField] private ResultadoFinal _resultado;
+    [SerializeField] private CameraFOVIntro _camaraFOV;
     public MPU6050QuaternionReceiver mpu;
 
     private bool _finalMostrado = false;
@@ -27,8 +28,10 @@ public class EndZone : MonoBehaviour
             _score = FindAnyObjectByType<Score>(FindObjectsInactive.Include);
         if (_resultado == null)
             _resultado = FindAnyObjectByType<ResultadoFinal>(FindObjectsInactive.Include);
+        if (_camaraFOV == null)
+            _camaraFOV = FindAnyObjectByType<CameraFOVIntro>(FindObjectsInactive.Include);
 
-        Debug.Log($"EndZone Awake -> fader:{_fader != null} score:{_score != null} resultado:{_resultado != null}");
+        Debug.Log($"EndZone Awake -> fader:{_fader != null} score:{_score != null} resultado:{_resultado != null} camara:{_camaraFOV != null}");
 
         if (canvasFinal != null) canvasFinal.SetActive(false);
     }
@@ -39,12 +42,15 @@ public class EndZone : MonoBehaviour
     }
 
     public void MostrarFinal(bool gano)
-    { 
+    {
         if (_finalMostrado) return;
         _finalMostrado = true;
 
         Debug.Log("EndZone: MostrarFinal, gano = " + gano);
         CerrarMPU();
+
+        // El zoom se abre de nuevo (vuelve al FOV inicial) mientras se cubre la pantalla
+        if (_camaraFOV != null) _camaraFOV.ReturnToStart();
 
         if (_fader != null)
         {
@@ -125,6 +131,9 @@ public class EndZone : MonoBehaviour
         canvasFinal.SetActive(false);
         Time.timeScale = 1f;
         _generator.GenerarNuevo();
+
+        // Repite el zoom de entrada en el nuevo nivel
+        if (_camaraFOV != null) _camaraFOV.PlayIntro();
 
         if (_fader != null)
             _fader.FadeIn(SceneFader.FadeType.Shutters, () => _fader.gameObject.SetActive(false));

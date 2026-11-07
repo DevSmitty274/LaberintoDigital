@@ -22,7 +22,7 @@ public class ResultadoFinal : MonoBehaviour
 
     [Header("Ranking (opcional)")]
     [SerializeField] private TMP_Text textoRanking;
-    [SerializeField] private int maxRanking = 10;
+    [SerializeField] private int maxRanking = 5;
 
     private const string ClaveRanking = "RankingArcade";
 
