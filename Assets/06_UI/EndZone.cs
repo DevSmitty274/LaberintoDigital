@@ -132,11 +132,13 @@ public class EndZone : MonoBehaviour
         Time.timeScale = 1f;
         _generator.GenerarNuevo();
 
-        // Repite el zoom de entrada en el nuevo nivel
         if (_camaraFOV != null) _camaraFOV.PlayIntro();
 
         if (_fader != null)
+        {
+            ActivarConPadres(_fader.gameObject);
             _fader.FadeIn(SceneFader.FadeType.Shutters, () => _fader.gameObject.SetActive(false));
+        }
     }
 
     public void ReiniciarNivel()
