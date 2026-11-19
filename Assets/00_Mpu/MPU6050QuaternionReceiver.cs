@@ -36,14 +36,20 @@ public class MPU6050QuaternionReceiver : MonoBehaviour
     }
     void ReceiveData()
     {
+        Debug.Log("Hilo UDP iniciado, escuchando en puerto " + port);
         IPEndPoint remoteEP = new IPEndPoint(IPAddress.Any, port);
         while (running)
         {
             try
             {
                 byte[] data = udpClient.Receive(ref remoteEP);
+                Debug.Log("Paquete recibido de " + remoteEP.Address);   // <-- nuevo
                 string text = System.Text.Encoding.UTF8.GetString(data);
                 ParseData(text);
+            }
+            catch (System.Threading.ThreadAbortException)               // <-- nuevo
+            {
+               
             }
             catch (System.Exception e)
             {
@@ -56,6 +62,7 @@ public class MPU6050QuaternionReceiver : MonoBehaviour
     }
     void ParseData(string text)
     {
+        Debug.Log("UDP recibido: " + text);
         // Formato esperado desde el ESP32: w,x,y,z
         string[] values = text.Split(',');
         if (values.Length == 4)
@@ -120,14 +127,11 @@ public class MPU6050QuaternionReceiver : MonoBehaviour
             rb.MoveRotation(targetRot);
         }
     }
-    void OnApplicationQuit()
+    void OnDestroy()
     {
         running = false;
-        udpClient.Close();
-
+        try { udpClient?.Close(); } catch { }
         if (receiveThread != null && receiveThread.IsAlive)
-        {
             receiveThread.Join(200);
-        }
     }
 }

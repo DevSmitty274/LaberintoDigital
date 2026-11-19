@@ -69,7 +69,7 @@ public class Timer : MonoBehaviour
 
         int minutos = Mathf.FloorToInt(tiempoRestante / 60f);
         int segundos = Mathf.FloorToInt(tiempoRestante % 60f);
-        textoTiempo.text = $"Tiempo: {minutos:00}:{segundos:00}";
+        textoTiempo.text = $"{minutos:00}:{segundos:00}";
     }
 
     void TerminarConexion()

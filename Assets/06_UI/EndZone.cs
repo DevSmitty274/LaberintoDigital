@@ -9,6 +9,10 @@ public class EndZone : MonoBehaviour
     [SerializeField] private GameObject textoPerdiste;
     [SerializeField] private GameObject botonSiguiente;
     [SerializeField] private GameObject botonReiniciar;
+    [SerializeField] private GameObject imagenFondo; // "Image (1)"
+
+    [Header("UI de juego")]
+    [SerializeField] private CanvasGroup uiTiempoPuntos; // "UI de tiempo y puntos"
 
     [Header("Referencias")]
     [SerializeField] private Generator _generator;
@@ -31,7 +35,7 @@ public class EndZone : MonoBehaviour
         if (_camaraFOV == null)
             _camaraFOV = FindAnyObjectByType<CameraFOVIntro>(FindObjectsInactive.Include);
 
-        Debug.Log($"EndZone Awake -> fader:{_fader != null} score:{_score != null} resultado:{_resultado != null} camara:{_camaraFOV != null}");
+        Debug.Log($"EndZone Awake -> fader:{_fader != null} score:{_score != null} resultado:{_resultado != null} camara:{_camaraFOV != null} uiJuego:{uiTiempoPuntos != null}", this);
 
         if (canvasFinal != null) canvasFinal.SetActive(false);
     }
@@ -47,6 +51,8 @@ public class EndZone : MonoBehaviour
         _finalMostrado = true;
 
         Debug.Log("EndZone: MostrarFinal, gano = " + gano);
+
+        MostrarUIJuego(false); // se oculta apenas termina el nivel
         CerrarMPU();
 
         // El zoom se abre de nuevo (vuelve al FOV inicial) mientras se cubre la pantalla
@@ -68,11 +74,12 @@ public class EndZone : MonoBehaviour
         Debug.Log("EndZone: MostrarCanvas (el fade terminó)");
 
         ActivarConPadres(canvasFinal);
+        if (imagenFondo != null) imagenFondo.SetActive(true);
         if (textoGanaste != null) textoGanaste.SetActive(gano);
         if (textoPerdiste != null) textoPerdiste.SetActive(!gano);
 
-        botonSiguiente.SetActive(false);
-        botonReiniciar.SetActive(false);
+        if (botonSiguiente != null) botonSiguiente.SetActive(false);
+        if (botonReiniciar != null) botonReiniciar.SetActive(false);
 
         if (_resultado != null)
         {
@@ -108,27 +115,47 @@ public class EndZone : MonoBehaviour
 
     void CerrarMPU()
     {
-        try
+        if (mpu != null) mpu.enabled = false; // detiene FixedUpdate, el socket sigue vivo
+    }
+
+    void MostrarUIJuego(bool visible)
+    {
+        if (uiTiempoPuntos == null)
         {
-            if (mpu != null)
-            {
-                mpu.running = false;
-                mpu.udpClient?.Close();
-                if (mpu.receiveThread != null && mpu.receiveThread.IsAlive)
-                    mpu.receiveThread.Join(200);
-            }
+            Debug.LogError("EndZone: uiTiempoPuntos NO está asignado", this);
+            return;
         }
-        catch (System.Exception e)
-        {
-            Debug.LogWarning("Error cerrando MPU: " + e.Message);
-        }
+
+        Debug.Log("EndZone: UI de juego alpha = " + (visible ? 1 : 0), this);
+        uiTiempoPuntos.alpha = visible ? 1f : 0f;
+        uiTiempoPuntos.interactable = visible;
+        uiTiempoPuntos.blocksRaycasts = visible;
+    }
+
+    void OcultarUIFinal()
+    {
+        if (imagenFondo != null) imagenFondo.SetActive(false);
+        if (textoGanaste != null) textoGanaste.SetActive(false);
+        if (textoPerdiste != null) textoPerdiste.SetActive(false);
+        if (botonSiguiente != null) botonSiguiente.SetActive(false);
+        if (botonReiniciar != null) botonReiniciar.SetActive(false);
+        if (canvasFinal != null) canvasFinal.SetActive(false);
     }
 
     public void SiguienteNivel()
     {
+        Debug.Log("EndZone: CLICK en Siguiente");
         _finalMostrado = false;
-        if (_resultado != null) _resultado.Ocultar();
-        canvasFinal.SetActive(false);
+
+        OcultarUIFinal(); // primero, antes de nada que pueda fallar
+        if (_resultado != null)
+        {
+            _resultado.Ocultar();
+            _resultado.gameObject.SetActive(false); // por si Ocultar() no lo desactiva
+        }
+
+        MostrarUIJuego(true); // la UI de tiempo y puntos vuelve
+
         Time.timeScale = 1f;
         _generator.GenerarNuevo();
 
@@ -139,6 +166,7 @@ public class EndZone : MonoBehaviour
             ActivarConPadres(_fader.gameObject);
             _fader.FadeIn(SceneFader.FadeType.Shutters, () => _fader.gameObject.SetActive(false));
         }
+        if (mpu != null) mpu.enabled = true;
     }
 
     public void ReiniciarNivel()
